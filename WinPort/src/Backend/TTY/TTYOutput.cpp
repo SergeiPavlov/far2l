@@ -327,10 +327,39 @@ void TTYOutput::WriteWChar(WCHAR wch)
 	_same_chars.count++;
 }
 
+static const char *g_TERM = getenv("TERM");
+
+static bool g_isVT = g_TERM && (!strcmp(g_TERM, "wsvt25")				// VT-100 compatible terminal
+	 || !strcmp(g_TERM, "vt100")
+	 || !strcmp(g_TERM, "vt220"));		
+
+// Translation table for IBM 437 codepage pseudo-graphics codes 0xB0..0xEF to VT-100 codes
+static const char g_VTtranslation[64] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz            ";
+
+static void WriteToVT(std::vector<char>& rawbuf, const char *str, int len) {
+	while (len--) {
+		char c = *str++;
+		uint8_ code = (uint8_t)c;
+		if (code >= 0xB0 && code <= 0xEF) {
+			if (char vtCode = g_VTtranslation[code - 0xB0]) {
+				char buf[7] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode'
+				buf[3] = vtCode;
+				rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf));
+				continue;
+			}
+		}
+		rawbuf.push_back(rawbuf, c);
+	}
+}
+
 void TTYOutput::Write(const char *str, int len)
 {
 	if (len > 0) {
 		FinalizeSameChars();
+		if (g_isVT) {
+			WriteToVT(_rawbuf, str, len);
+			return;
+		}
 		_rawbuf.insert(_rawbuf.end(), str, str + len);
 	}
 }
