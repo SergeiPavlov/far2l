@@ -1,3 +1,5 @@
+
+
 #include <stdarg.h>
 #include <assert.h>
 #include <base64.h>
@@ -322,23 +324,7 @@ static bool g_isVT = g_TERM && (!strcmp(g_TERM, "wsvt25")				// VT-100 compatibl
 	 || !strcmp(g_TERM, "vt220"));		
 
 // Translation table for Unicode pseudo-graphics codes 0x2500..0x257F to VT-100 codes
-static const char g_VTtranslation[129] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz0123456789  dsahdgljhasgdfjashgfjhasegfjhsadjfcsadgjfsddfjsaiofjhkjasdhfjsha";
-
-static void WriteToVT(std::vector<char>& rawbuf, const char *str, int len) {
-	while (len--) {
-		char c = *str++;
-		uint8_t code = (uint8_t)c;
-		if (code >= 0xB0 && code <= 0xEF) {
-			if (char vtCode = g_VTtranslation[code - 0xB0]) {
-				char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode'
-				buf[3] = vtCode;
-				rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf) - 1);
-				continue;
-			}
-		}
-		rawbuf.push_back(c);
-	}
-}
+static const char g_VTtranslation[129] = "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
 
 bool TTYOutput::WriteToVT(WCHAR wch) {
 	if (wch >= 0x2500 && wch <= 0x257F)
@@ -346,7 +332,7 @@ bool TTYOutput::WriteToVT(WCHAR wch) {
 			FinalizeSameChars();
 			char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode' ESC sequence
 			buf[3] = vtCode;
-			rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf) - 1);
+			_rawbuf.insert(_rawbuf.end(), buf, buf + sizeof(buf) - 1);
 			return true;
 		}
 	return false;
@@ -371,10 +357,6 @@ void TTYOutput::Write(const char *str, int len)
 {
 	if (len > 0) {
 		FinalizeSameChars();
-		if (g_isVT) {
-			//WriteToVT(_rawbuf, str, len);
-			return;
-		}
 		_rawbuf.insert(_rawbuf.end(), str, str + len);
 	}
 }
