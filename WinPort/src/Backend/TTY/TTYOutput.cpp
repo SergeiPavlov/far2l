@@ -323,18 +323,18 @@ static bool g_isVT = g_TERM && (!strcmp(g_TERM, "wsvt25")				// VT-100 compatibl
 	 || !strcmp(g_TERM, "vt100")
 	 || !strcmp(g_TERM, "vt220"));		
 
-// Translation table for Unicode pseudo-graphics codes 0x2500..0x257F to VT-100 codes
-static const char g_VTtranslation[129] = "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+// Translation table for Unicode pseudo-graphics codes 0x2500..0x2570 to VT-100 codes
+//                                        ─━│┃┄┅┆┇┈┉┊┋┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬╭╮╯╰
+static const char g_VTtranslation[114] = "qqxxqqxxqqxxllllkkkkmmmmjjjjttttttttuuuuuuuuwwwwwwwwvvvvvvvvnnnnnnnnnnnnnnnnqqxxqxlllkkkmmmjjjtttuuuwwwvvvnnnlkjm";
 
 bool TTYOutput::WriteToVT(WCHAR wch) {
-	if (wch >= 0x2500 && wch <= 0x257F)
-		if (char vtCode = g_VTtranslation[wch - 0x2500]) {
-			FinalizeSameChars();
-			char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode' ESC sequence
-			buf[3] = vtCode;
-			_rawbuf.insert(_rawbuf.end(), buf, buf + sizeof(buf) - 1);
-			return true;
-		}
+	if (wch >= 0x2500 && wch <= 0x2570) {
+		FinalizeSameChars();
+		char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode' ESC sequence
+		buf[3] = g_VTtranslation[wch - 0x2500];
+		_rawbuf.insert(_rawbuf.end(), buf, buf + sizeof(buf) - 1);
+		return true;
+	}
 	return false;
 }
 
