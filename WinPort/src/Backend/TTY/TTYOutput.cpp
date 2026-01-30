@@ -334,21 +334,21 @@ static bool g_isVT = g_TERM && (!strcmp(g_TERM, "wsvt25")				// VT-100 compatibl
 	 || !strcmp(g_TERM, "vt220"));		
 
 // Translation table for IBM 437 codepage pseudo-graphics codes 0xB0..0xEF to VT-100 codes
-static const char g_VTtranslation[64] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz            ";
+static const char g_VTtranslation[65] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz0123456789  ";
 
 static void WriteToVT(std::vector<char>& rawbuf, const char *str, int len) {
 	while (len--) {
 		char c = *str++;
-		uint8_ code = (uint8_t)c;
+		uint8_t code = (uint8_t)c;
 		if (code >= 0xB0 && code <= 0xEF) {
 			if (char vtCode = g_VTtranslation[code - 0xB0]) {
-				char buf[7] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode'
+				char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode'
 				buf[3] = vtCode;
-				rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf));
+				rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf) - 1);
 				continue;
 			}
 		}
-		rawbuf.push_back(rawbuf, c);
+		rawbuf.push_back(c);
 	}
 }
 
@@ -357,7 +357,7 @@ void TTYOutput::Write(const char *str, int len)
 	if (len > 0) {
 		FinalizeSameChars();
 		if (g_isVT) {
-			WriteToVT(_rawbuf, str, len);
+			//WriteToVT(_rawbuf, str, len);
 			return;
 		}
 		_rawbuf.insert(_rawbuf.end(), str, str + len);
