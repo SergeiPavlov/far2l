@@ -315,26 +315,14 @@ void TTYOutput::FinalizeSameChars()
 	}
 }
 
-void TTYOutput::WriteWChar(WCHAR wch)
-{
-	if (_same_chars.count == 0) {
-		_same_chars.wch = wch;
-
-	} else if (_same_chars.wch != wch) {
-		FinalizeSameChars();
-		_same_chars.wch = wch;
-	}
-	_same_chars.count++;
-}
-
 static const char *g_TERM = getenv("TERM");
 
 static bool g_isVT = g_TERM && (!strcmp(g_TERM, "wsvt25")				// VT-100 compatible terminal
 	 || !strcmp(g_TERM, "vt100")
 	 || !strcmp(g_TERM, "vt220"));		
 
-// Translation table for IBM 437 codepage pseudo-graphics codes 0xB0..0xEF to VT-100 codes
-static const char g_VTtranslation[65] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz0123456789  ";
+// Translation table for Unicode pseudo-graphics codes 0x2500..0x257F to VT-100 codes
+static const char g_VTtranslation[129] = "abcdefghigklmnopqrstuvwxyzabcdefghigklmnopqrstuvwxyz0123456789  dsahdgljhasgdfjashgfjhasegfjhsadjfcsadgjfsddfjsaiofjhkjasdhfjsha";
 
 static void WriteToVT(std::vector<char>& rawbuf, const char *str, int len) {
 	while (len--) {
@@ -350,6 +338,33 @@ static void WriteToVT(std::vector<char>& rawbuf, const char *str, int len) {
 		}
 		rawbuf.push_back(c);
 	}
+}
+
+bool TTYOutput::WriteToVT(WCHAR wch) {
+	if (wch >= 0x2500 && wch <= 0x257F)
+		if (char vtCode = g_VTtranslation[wch - 0x2500]) {
+			FinalizeSameChars();
+			char buf[8] = ESC "(0 " ESC "(B";                               // Enable/Disable 'DEC Line Drawing mode' ESC sequence
+			buf[3] = vtCode;
+			rawbuf.insert(rawbuf.end(), buf, buf + sizeof(buf) - 1);
+			return true;
+		}
+	return false;
+}
+
+void TTYOutput::WriteWChar(WCHAR wch)
+{
+	if (g_isVT && WriteToVT(wch))
+		return;
+
+	if (_same_chars.count == 0) {
+		_same_chars.wch = wch;
+
+	} else if (_same_chars.wch != wch) {
+		FinalizeSameChars();
+		_same_chars.wch = wch;
+	}
+	_same_chars.count++;
 }
 
 void TTYOutput::Write(const char *str, int len)
